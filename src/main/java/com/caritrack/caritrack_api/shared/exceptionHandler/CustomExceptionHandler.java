@@ -10,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import javax.management.relation.RoleNotFoundException;
 import java.time.LocalDateTime;
 
 @ControllerAdvice
@@ -44,6 +45,18 @@ public class CustomExceptionHandler {
                 LocalDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),
                 unfe.getMessage()
+        );
+
+        return new ResponseEntity<>(error,HttpStatus.BAD_REQUEST);
+
+    }
+
+    @ExceptionHandler(RoleNotFoundException.class)
+    public ResponseEntity<CustomError> handleUserNotFoundException (RoleNotFoundException rnfe){
+        CustomError error = new CustomError(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                rnfe.getMessage()
         );
 
         return new ResponseEntity<>(error,HttpStatus.BAD_REQUEST);
