@@ -14,7 +14,12 @@ public class MessageService {
     private final MessageSource messageSource;
 
     public String getMessage(String code, Object... args) {
-        Locale locale = LocaleContextHolder.getLocale();
-        return messageSource.getMessage(code, args, locale);
+        try {
+            Locale locale = LocaleContextHolder.getLocale();
+            // Agregamos un valor por defecto (el mismo código) para evitar el 500
+            return messageSource.getMessage(code, args, code, locale);
+        } catch (Exception e) {
+            return "Message not found: " + code;
+        }
     }
 }

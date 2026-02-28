@@ -1,6 +1,7 @@
 package com.caritrack.caritrack_api.shared.exceptionHandler;
 
-import com.caritrack.caritrack_api.user.utils.exceptions.UserNotFoundException;
+import com.caritrack.caritrack_api.association.utils.exceptions.AssociationNotFoundException;
+import com.caritrack.caritrack_api.item.utils.exceptions.ItemNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
 public class CustomExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<CustomError> handleMethodArgumentNotValidException (MethodArgumentNotValidException manve) {
+    public ResponseEntity<CustomError> handleMethodArgumentNotValidException(MethodArgumentNotValidException manve) {
 
         CustomError error = new CustomError(
                 LocalDateTime.now(),
@@ -25,56 +26,44 @@ public class CustomExceptionHandler {
                 manve.getMessage()
         );
 
-        return new ResponseEntity<>(error,HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<CustomError> handleConstraintViolationException (ConstraintViolationException cve){
+    public ResponseEntity<CustomError> handleConstraintViolationException(ConstraintViolationException cve) {
         CustomError error = new CustomError(
                 LocalDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),
                 cve.getMessage()
         );
 
-        return new ResponseEntity<>(error,HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<CustomError> handleUserNotFoundException (UserNotFoundException unfe){
+    @ExceptionHandler({AssociationNotFoundException.class,RoleNotFoundException.class, ItemNotFoundException.class})
+    public ResponseEntity<CustomError> handleUserNotFoundException(Exception nfe) {
         CustomError error = new CustomError(
                 LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                unfe.getMessage()
+                HttpStatus.NOT_FOUND.value(),
+                nfe.getMessage()
         );
 
-        return new ResponseEntity<>(error,HttpStatus.BAD_REQUEST);
-
-    }
-
-    @ExceptionHandler(RoleNotFoundException.class)
-    public ResponseEntity<CustomError> handleUserNotFoundException (RoleNotFoundException rnfe){
-        CustomError error = new CustomError(
-                LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                rnfe.getMessage()
-        );
-
-        return new ResponseEntity<>(error,HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
 
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<CustomError> handleDataIntegrityException (DataIntegrityViolationException dive) {
+    public ResponseEntity<CustomError> handleDataIntegrityException(DataIntegrityViolationException dive) {
         String message = dive.getMessage();
         if (message.contains("unique constraint")) message = "{error.integrity.exception}";
 
         CustomError error = new CustomError(
                 LocalDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),
-                dive.getMessage()
+                message
         );
 
-        return new ResponseEntity<>(error,HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
 
     }
 
@@ -87,5 +76,8 @@ public class CustomExceptionHandler {
                 "{error.database.connection}"
         );
 
-        return new ResponseEntity<>(error,HttpStatus.INTERNAL_SERVER_ERROR);    }
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+
 }
