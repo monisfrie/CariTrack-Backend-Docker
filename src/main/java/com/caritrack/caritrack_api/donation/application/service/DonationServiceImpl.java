@@ -1,5 +1,7 @@
 package com.caritrack.caritrack_api.donation.application.service;
 
+import com.caritrack.caritrack_api.associationinventory.domain.AssociationInventoryRepository;
+import com.caritrack.caritrack_api.itemstatistics.domain.ItemStatisticsRepository;
 import com.caritrack.caritrack_api.request.domain.RequestRepository;
 import com.caritrack.caritrack_api.request.utils.exceptions.RequestNotFoundException;
 import com.caritrack.caritrack_api.item.domain.ItemRepository;
@@ -35,16 +37,25 @@ public class DonationServiceImpl implements DonationService {
     private final DonationMapperService mapper;
     private final MessageService messageService;
 
+    private final AssociationInventoryRepository inventoryRepository;
+    private final ItemStatisticsRepository statisticsRepository;
+
+
     @Override
     @Transactional
     public DonationResponseDto create(DonationCreateRequestDto request) {
 
-        // Validaciones existencia
         existingUser(request.getUserId());
-        existingRequest(request.getRequestId());
+
+        var req = requestRepository.findById(request.getRequestId())
+                .orElseThrow(() -> new RequestNotFoundException(
+                        messageService.getMessage("error.request.not.found", request.getRequestId())
+                ));
+
         request.getItems().forEach(line -> existingItem(line.getItemId()));
 
-        // Crear Donation
+        Long associationId = req.getAssociationId();
+
         Donation donation = Donation.builder()
                 .userId(request.getUserId())
                 .requestId(request.getRequestId())
@@ -54,7 +65,6 @@ public class DonationServiceImpl implements DonationService {
 
         Donation savedDonation = donationRepository.save(donation);
 
-        // Crear DonationItems
         List<DonationItem> lines = request.getItems().stream()
                 .map(l -> DonationItem.builder()
                         .donationId(savedDonation.getId())
@@ -65,7 +75,6 @@ public class DonationServiceImpl implements DonationService {
 
         List<DonationItem> savedLines = donationItemRepository.saveAll(lines);
 
-        // Montar respuesta
         DonationResponseDto response = mapper.toResponseDto(savedDonation);
         response.setItems(savedLines.stream()
                 .map(li -> new DonationItemResponseDto(li.getId(), li.getItemId(), li.getQuantity()))
@@ -106,14 +115,42 @@ public class DonationServiceImpl implements DonationService {
     }
 
     @Override
+    @Transactional
     public DonationResponseDto updateStatus(Long id, DonationUpdateStatusDto request) {
+
         Donation donation = donationRepository.findById(id).orElseThrow(() ->
                 new DonationNotFoundException(messageService.getMessage("error.donation.not.found", id))
         );
-        donation.setStatus(request.getStatus());
+
+        DonationStatus previousStatus = donation.getStatus();
+        DonationStatus newStatus = request.getStatus();
+
+        // Si no cambia, devolvemos tal cual
+        if (previousStatus == newStatus) {
+            return toResponseWithItems(donation);
+        }
+
+        donation.setStatus(newStatus);
         Donation saved = donationRepository.save(donation);
+
+        // ✅ Aplicar SOLO si pasa a RECEIVED por primera vez
+        if (previousStatus != DonationStatus.RECEIVED && newStatus == DonationStatus.RECEIVED) {
+
+            var req = requestRepository.findById(saved.getRequestId())
+                    .orElseThrow(() -> new RequestNotFoundException(
+                            messageService.getMessage("error.request.not.found", saved.getRequestId())
+                    ));
+
+            Long associationId = req.getAssociationId();
+
+            var donationItems = donationItemRepository.findByDonationId(saved.getId());
+
+            applyDonationToInventoryAndStats(associationId, donationItems);
+        }
+
         return toResponseWithItems(saved);
     }
+
 
     @Override
     @Transactional
@@ -121,6 +158,42 @@ public class DonationServiceImpl implements DonationService {
         // borrar hijos primero
         donationItemRepository.deleteByDonationId(id);
         donationRepository.deleteById(id);
+    }
+
+    private void applyDonationToInventoryAndStats(Long associationId, List<DonationItem> donationItems) {
+
+        Instant now = Instant.now();
+
+        for (DonationItem li : donationItems) {
+
+            var inv = inventoryRepository.findByAssociationIdAndItemId(associationId, li.getItemId())
+                    .orElse(com.caritrack.caritrack_api.associationinventory.domain.AssociationInventory.builder()
+                            .associationId(associationId)
+                            .itemId(li.getItemId())
+                            .stockQuantity(0)
+                            .minRequired(0)
+                            .maxCapacity(null)
+                            .lastUpdated(now)
+                            .build());
+
+            inv.setStockQuantity(inv.getStockQuantity() + li.getQuantity());
+            inv.setLastUpdated(now);
+            inventoryRepository.save(inv);
+
+            var stats = statisticsRepository.findByAssociationIdAndItemId(associationId, li.getItemId())
+                    .orElse(com.caritrack.caritrack_api.itemstatistics.domain.ItemStatistics.builder()
+                            .associationId(associationId)
+                            .itemId(li.getItemId())
+                            .totalReceived(0)
+                            .totalDelivered(0)
+                            .totalRequested(0)
+                            .lastCalculated(now)
+                            .build());
+
+            stats.setTotalReceived(stats.getTotalReceived() + li.getQuantity());
+            stats.setLastCalculated(now);
+            statisticsRepository.save(stats);
+        }
     }
 
     private DonationResponseDto toResponseWithItems(Donation donation) {
