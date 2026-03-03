@@ -1,0 +1,24 @@
+package com.caritrack.caritrack_api.user.infraestructure.controller.dtos;
+
+import com.caritrack.caritrack_api.user.domain.Role;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserResponseDto {
+
+    private UUID id;
+    private String username;
+    private String name;
+    private String email;
+    private Role role;
+    private boolean active;
+}
+
