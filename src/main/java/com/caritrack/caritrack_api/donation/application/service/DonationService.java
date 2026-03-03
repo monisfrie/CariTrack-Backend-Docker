@@ -1,5 +1,6 @@
 package com.caritrack.caritrack_api.donation.application.service;
 
+import com.caritrack.caritrack_api.donation.domain.DonationStatus;
 import com.caritrack.caritrack_api.donation.infraestructure.controller.dtos.*;
 
 import java.util.List;
@@ -17,7 +18,10 @@ public interface DonationService {
 
     List<DonationResponseDto> getByUser(UUID userId);
 
-    DonationResponseDto updateStatus(Long id, DonationUpdateStatusDto request);
-
     void delete(Long id);
+
+    List<DonationResponseDto> getByAssociation(Long associationId, DonationStatus status);
+
+    DonationResponseDto updateStatus(Long donationId, DonationUpdateStatusDto request);
+
 }

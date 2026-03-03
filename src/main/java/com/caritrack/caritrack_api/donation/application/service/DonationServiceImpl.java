@@ -222,4 +222,15 @@ public class DonationServiceImpl implements DonationService {
                 new ItemNotFoundException(messageService.getMessage("error.item.not.found", itemId))
         );
     }
+
+    @Override
+    public List<DonationResponseDto> getByAssociation(Long associationId, DonationStatus status) {
+
+        List<Donation> donations = (status == null)
+                ? donationRepository.findByAssociation(associationId)
+                : donationRepository.findByAssociationAndStatus(associationId, status);
+
+        return donations.stream().map(mapper::toResponseDto).toList();
+    }
+
 }

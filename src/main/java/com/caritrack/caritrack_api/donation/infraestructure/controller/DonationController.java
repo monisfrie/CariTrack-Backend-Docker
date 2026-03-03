@@ -1,6 +1,7 @@
 package com.caritrack.caritrack_api.donation.infraestructure.controller;
 
 import com.caritrack.caritrack_api.donation.application.service.DonationService;
+import com.caritrack.caritrack_api.donation.domain.DonationStatus;
 import com.caritrack.caritrack_api.donation.infraestructure.controller.dtos.*;
 import com.caritrack.caritrack_api.shared.dynamicMessages.MessageService;
 import lombok.RequiredArgsConstructor;
@@ -57,4 +58,13 @@ public class DonationController {
         service.delete(id);
         return ResponseEntity.ok(messageService.getMessage("donation.delete.ok", id));
     }
+
+    @GetMapping("/association/{associationId}")
+    public ResponseEntity<List<DonationResponseDto>> getByAssociation(
+            @PathVariable Long associationId,
+            @RequestParam(required = false) DonationStatus status
+    ) {
+        return ResponseEntity.ok(service.getByAssociation(associationId, status));
+    }
+
 }

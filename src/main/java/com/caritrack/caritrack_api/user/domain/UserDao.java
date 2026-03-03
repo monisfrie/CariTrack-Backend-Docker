@@ -14,5 +14,7 @@ public interface UserDao {
 
     void deleteById(UUID id);
 
+    boolean existsByEmail(String email);
+
 
 }

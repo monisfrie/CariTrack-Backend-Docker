@@ -2,6 +2,7 @@ package com.caritrack.caritrack_api.donation.infraestructure.repository;
 
 import com.caritrack.caritrack_api.donation.domain.Donation;
 import com.caritrack.caritrack_api.donation.domain.DonationRepository;
+import com.caritrack.caritrack_api.donation.domain.DonationStatus;
 import com.caritrack.caritrack_api.donation.infraestructure.mapper.DonationRepositoryMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -45,5 +46,15 @@ public class DonationRepositoryImpl implements DonationRepository {
     @Override
     public void deleteById(Long id) {
         jpaRepository.deleteById(id);
+    }
+
+    @Override
+    public List<Donation> findByAssociation(Long associationId) {
+        return jpaRepository.findByAssociation(associationId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Donation> findByAssociationAndStatus(Long associationId, DonationStatus status) {
+        return jpaRepository.findByAssociationAndStatus(associationId, status).stream().map(mapper::toDomain).toList();
     }
 }

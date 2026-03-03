@@ -2,6 +2,8 @@ package com.caritrack.caritrack_api.shared.exceptionHandler;
 
 import com.caritrack.caritrack_api.association.utils.exceptions.AssociationNotFoundException;
 import com.caritrack.caritrack_api.item.utils.exceptions.ItemNotFoundException;
+import com.caritrack.caritrack_api.user.utils.exceptions.UserAlreadyExistsException;
+import com.caritrack.caritrack_api.user.utils.exceptions.UserNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -40,7 +42,8 @@ public class CustomExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler({AssociationNotFoundException.class,RoleNotFoundException.class, ItemNotFoundException.class})
+    @ExceptionHandler({AssociationNotFoundException.class,RoleNotFoundException.class,
+            ItemNotFoundException.class, UserNotFoundException.class,})
     public ResponseEntity<CustomError> handleUserNotFoundException(Exception nfe) {
         CustomError error = new CustomError(
                 LocalDateTime.now(),
@@ -77,6 +80,17 @@ public class CustomExceptionHandler {
         );
 
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<CustomError> handleAlreadyExistsUser(UserAlreadyExistsException uae){
+        CustomError error = new CustomError(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                uae.getMessage()
+        );
+
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
 

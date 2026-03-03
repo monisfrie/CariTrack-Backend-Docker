@@ -17,4 +17,8 @@ public interface DonationRepository {
     List<Donation> findByUserId(UUID userId);
 
     void deleteById(Long id);
+
+    List<Donation> findByAssociation(Long associationId);
+
+    List<Donation> findByAssociationAndStatus(Long associationId, DonationStatus status);
 }
